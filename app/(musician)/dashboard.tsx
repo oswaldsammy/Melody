@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useMusicianBookings } from '@/hooks/useBookings';
 import { formatCurrency } from '@/lib/stripe';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 
 export default function MusicianDashboard() {
   const router = useRouter();
@@ -33,52 +35,66 @@ export default function MusicianDashboard() {
   const pending = bookings?.filter((b) => b.status === 'pending') ?? [];
   const confirmed = bookings?.filter((b) => b.status === 'confirmed') ?? [];
   const thisMonthEarnings = bookings
-    ?.filter((b) => b.status === 'completed' && new Date(b.completed_at!).getMonth() === new Date().getMonth())
+    ?.filter((b) => b.status === 'completed' && new Date((b as any).completed_at!).getMonth() === new Date().getMonth())
     .reduce((sum, b) => sum + b.musician_payout, 0) ?? 0;
 
   return (
-    <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <Text className="text-2xl font-bold text-gray-900 mb-1">Dashboard</Text>
-      <Text className="text-muted mb-6">Welcome, {profile?.full_name}</Text>
+    <ScrollView className="flex-1 bg-bg-primary" contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 40 }}>
+      <Text className="text-text-primary text-2xl font-bold mb-1">Dashboard</Text>
+      <Text className="text-text-muted mb-6">Welcome back, {profile?.full_name?.split(' ')[0]}</Text>
 
       {/* Availability toggle */}
-      <View className="bg-white rounded-2xl p-4 flex-row items-center justify-between mb-4 shadow-sm">
-        <View>
-          <Text className="font-semibold text-gray-900">Available for Bookings</Text>
-          <Text className="text-muted text-sm">{isAvailable ? 'Your profile is visible' : 'Hidden from search'}</Text>
+      <Card className="flex-row items-center justify-between mb-4">
+        <View className="flex-1 mr-4">
+          <Text className="text-text-primary font-semibold">Available for Bookings</Text>
+          <Text className="text-text-muted text-sm mt-0.5">
+            {isAvailable ? 'Your profile is visible to clients' : 'Hidden from search'}
+          </Text>
         </View>
-        <Switch value={isAvailable} onValueChange={toggleAvailability} disabled={loadingToggle} thumbColor="#7C3AED" />
+        <Switch
+          value={isAvailable}
+          onValueChange={toggleAvailability}
+          disabled={loadingToggle}
+          trackColor={{ false: '#27272A', true: '#6366F1' }}
+          thumbColor="#FAFAFA"
+        />
+      </Card>
+
+      {/* Stats row */}
+      <View className="flex-row gap-3 mb-6">
+        <View className="flex-1 bg-bg-surface border border-border-default rounded-xl p-4">
+          <Text className="text-text-muted text-xs mb-1">This Month</Text>
+          <Text className="text-brand-primary text-lg font-bold">{formatCurrency(thisMonthEarnings)}</Text>
+        </View>
+        <View className="flex-1 bg-bg-surface border border-border-default rounded-xl p-4">
+          <Text className="text-text-muted text-xs mb-1">Pending</Text>
+          <Text className="text-status-warning text-lg font-bold">{pending.length}</Text>
+        </View>
+        <View className="flex-1 bg-bg-surface border border-border-default rounded-xl p-4">
+          <Text className="text-text-muted text-xs mb-1">Confirmed</Text>
+          <Text className="text-status-success text-lg font-bold">{confirmed.length}</Text>
+        </View>
       </View>
 
-      {/* Stats */}
-      <View className="flex-row gap-3 mb-4">
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-          <Text className="text-muted text-sm">This Month</Text>
-          <Text className="text-xl font-bold text-primary">{formatCurrency(thisMonthEarnings)}</Text>
-        </View>
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-          <Text className="text-muted text-sm">Pending</Text>
-          <Text className="text-xl font-bold text-yellow-500">{pending.length}</Text>
-        </View>
-        <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm">
-          <Text className="text-muted text-sm">Confirmed</Text>
-          <Text className="text-xl font-bold text-green-600">{confirmed.length}</Text>
-        </View>
-      </View>
+      {isLoading && <ActivityIndicator color="#6366F1" className="mb-4" />}
 
       {/* Pending requests */}
       {pending.length > 0 && (
         <>
-          <Text className="font-semibold text-gray-900 mb-2">Pending Requests</Text>
+          <Text className="text-text-primary font-semibold mb-3">Pending Requests</Text>
           {pending.map((b) => (
             <TouchableOpacity
               key={b.id}
-              className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-2"
+              className="bg-bg-surface border border-status-warning/30 rounded-2xl p-4 mb-2"
               onPress={() => router.push(`/(musician)/bookings/${b.id}`)}
+              activeOpacity={0.7}
             >
-              <Text className="font-semibold">{(b as any).client?.full_name}</Text>
-              <Text className="text-muted text-sm">{b.event_type} · {new Date(b.event_date).toLocaleDateString()}</Text>
-              <Text className="text-primary font-medium mt-1">{formatCurrency(b.musician_payout)}</Text>
+              <View className="flex-row items-center justify-between mb-1">
+                <Text className="font-semibold text-text-primary">{(b as any).client?.full_name}</Text>
+                <Badge label="pending" variant="pending" />
+              </View>
+              <Text className="text-text-muted text-sm">{b.event_type} · {new Date(b.event_date).toLocaleDateString()}</Text>
+              <Text className="text-brand-primary font-semibold mt-2">{formatCurrency(b.musician_payout)}</Text>
             </TouchableOpacity>
           ))}
         </>
@@ -87,19 +103,29 @@ export default function MusicianDashboard() {
       {/* Next confirmed gig */}
       {confirmed.length > 0 && (
         <>
-          <Text className="font-semibold text-gray-900 mb-2 mt-4">Next Gig</Text>
+          <Text className="text-text-primary font-semibold mb-3 mt-4">Next Gig</Text>
           <TouchableOpacity
-            className="bg-green-50 border border-green-200 rounded-2xl p-4"
+            className="bg-bg-surface border border-status-success/30 rounded-2xl p-4"
             onPress={() => router.push(`/(musician)/bookings/${confirmed[0].id}`)}
+            activeOpacity={0.7}
           >
-            <Text className="font-semibold">{confirmed[0].event_type}</Text>
-            <Text className="text-muted text-sm">{new Date(confirmed[0].event_date).toLocaleString()}</Text>
-            <Text className="text-muted text-sm">{confirmed[0].location}</Text>
+            <View className="flex-row items-center justify-between mb-1">
+              <Text className="font-semibold text-text-primary">{confirmed[0].event_type}</Text>
+              <Badge label="confirmed" variant="confirmed" />
+            </View>
+            <Text className="text-text-muted text-sm">{new Date(confirmed[0].event_date).toLocaleString()}</Text>
+            {confirmed[0].location ? <Text className="text-text-muted text-sm mt-0.5">{confirmed[0].location}</Text> : null}
           </TouchableOpacity>
         </>
       )}
 
-      {isLoading && <ActivityIndicator color="#7C3AED" className="mt-4" />}
+      {!isLoading && pending.length === 0 && confirmed.length === 0 && (
+        <View className="items-center mt-8">
+          <Text className="text-4xl mb-4">🎸</Text>
+          <Text className="text-text-muted text-base">No upcoming bookings</Text>
+          <Text className="text-text-muted text-sm mt-1">Make sure you're available to get discovered</Text>
+        </View>
+      )}
     </ScrollView>
   );
 }

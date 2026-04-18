@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import type { UserRole } from '@/types/database';
 
 export default function SignUp() {
@@ -15,81 +17,63 @@ export default function SignUp() {
   async function handleSignUp() {
     if (!fullName || !email || !password) return;
     setLoading(true);
-
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error || !data.user) {
       setLoading(false);
       Alert.alert('Error', error?.message ?? 'Sign up failed');
       return;
     }
-
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      role,
-      full_name: fullName,
+      id: data.user.id, role, full_name: fullName,
     });
-
     setLoading(false);
-
-    if (profileError) {
-      Alert.alert('Error', profileError.message);
-      return;
-    }
-
+    if (profileError) { Alert.alert('Error', profileError.message); return; }
     router.replace(role === 'musician' ? '/(auth)/onboarding/musician' : '/(auth)/onboarding/client');
   }
 
   return (
-    <View className="flex-1 bg-white justify-center px-6">
-      <Text className="text-3xl font-bold text-primary mb-2">Create Account</Text>
-      <Text className="text-muted mb-8">Join Melody as a client or musician</Text>
+    <KeyboardAvoidingView className="flex-1 bg-bg-primary" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View className="flex-1 px-6 pt-20 pb-8 justify-between">
 
-      <Text className="text-sm font-medium text-gray-700 mb-2">I am a...</Text>
-      <View className="flex-row mb-6 gap-3">
-        {(['client', 'musician'] as UserRole[]).map((r) => (
-          <TouchableOpacity
-            key={r}
-            className={`flex-1 py-3 rounded-xl border-2 items-center ${role === r ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
-            onPress={() => setRole(r)}
-          >
-            <Text className={`font-semibold capitalize ${role === r ? 'text-primary' : 'text-gray-600'}`}>{r}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+          <View>
+            <Text className="text-text-primary text-4xl font-bold mb-1">Create account</Text>
+            <Text className="text-text-muted text-base mb-10">Join Melody as a client or musician</Text>
 
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="Full Name"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-6 text-base"
-        placeholder="Password (min 8 characters)"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+            {/* Role selector */}
+            <Text className="text-text-muted text-xs font-medium uppercase tracking-widest mb-3">I am a...</Text>
+            <View className="flex-row gap-3 mb-6">
+              {(['client', 'musician'] as UserRole[]).map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  onPress={() => setRole(r)}
+                  className={`flex-1 py-4 rounded-xl border-2 items-center ${
+                    role === r ? 'border-brand-primary bg-indigo-500/10' : 'border-border-default bg-bg-surface'
+                  }`}
+                >
+                  <Text className="text-2xl mb-1">{r === 'client' ? '🎧' : '🎸'}</Text>
+                  <Text className={`font-semibold capitalize text-sm ${role === r ? 'text-brand-primary' : 'text-text-muted'}`}>{r}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-      <TouchableOpacity
-        className="bg-primary rounded-xl py-4 items-center"
-        onPress={handleSignUp}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-semibold text-base">Create Account</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+            <Input label="Full Name" placeholder="John Doe" value={fullName} onChangeText={setFullName} />
+            <Input label="Email" placeholder="you@example.com" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+            <Input label="Password" placeholder="Min. 8 characters" value={password} onChangeText={setPassword} secureTextEntry />
+          </View>
+
+          <View>
+            <Button label="Create Account" onPress={handleSignUp} loading={loading} size="lg" />
+            <View className="flex-row justify-center mt-6">
+              <Text className="text-text-muted text-sm">Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.back()}>
+                <Text className="text-brand-primary text-sm font-semibold">Sign in</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

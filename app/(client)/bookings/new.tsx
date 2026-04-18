@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useMusicianProfile } from '@/hooks/useMusicians';
 import { formatCurrency } from '@/lib/stripe';
 import { calculateFees } from '@/constants/commission';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card } from '@/components/ui/Card';
 
 const EVENT_TYPES = ['Wedding', 'Corporate Event', 'Birthday Party', 'Concert', 'Private Party', 'Restaurant', 'Bar / Venue', 'Lesson', 'Recording Session', 'Other'];
 
@@ -25,7 +28,7 @@ export default function NewBooking() {
 
   async function handleBook() {
     if (!eventType || !eventDate || !location) {
-      Alert.alert('Please fill in all required fields');
+      Alert.alert('Missing fields', 'Please fill in event type, date, and location.');
       return;
     }
     setLoading(true);
@@ -48,9 +51,9 @@ export default function NewBooking() {
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-
-      Alert.alert('Request Sent!', 'The musician will confirm your booking shortly.');
-      router.replace('/(client)/bookings');
+      Alert.alert('Request Sent!', 'The musician will confirm your booking shortly.', [
+        { text: 'OK', onPress: () => router.replace('/(client)/bookings') },
+      ]);
     } catch (err: any) {
       Alert.alert('Error', err.message);
     } finally {
@@ -59,86 +62,85 @@ export default function NewBooking() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <TouchableOpacity onPress={() => router.back()} className="mb-4">
-        <Text className="text-primary">← Back</Text>
-      </TouchableOpacity>
-      <Text className="text-2xl font-bold mb-1">Request Booking</Text>
-      {musician && <Text className="text-muted mb-6">with {musician.profile?.full_name}</Text>}
+    <KeyboardAvoidingView className="flex-1 bg-bg-primary" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity onPress={() => router.back()} className="mb-6">
+          <Text className="text-brand-primary font-medium">← Back</Text>
+        </TouchableOpacity>
 
-      <Text className="text-sm font-medium text-gray-700 mb-2">Event Type *</Text>
-      <View className="flex-row flex-wrap gap-2 mb-4">
-        {EVENT_TYPES.map((t) => (
-          <TouchableOpacity
-            key={t}
-            className={`px-3 py-1.5 rounded-full border ${eventType === t ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
-            onPress={() => setEventType(t)}
-          >
-            <Text className={eventType === t ? 'text-primary text-sm font-medium' : 'text-gray-600 text-sm'}>{t}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        <Text className="text-text-primary text-3xl font-bold mb-1">Request Booking</Text>
+        {musician && (
+          <Text className="text-text-muted text-base mb-8">with {musician.profile?.full_name}</Text>
+        )}
 
-      <Text className="text-sm font-medium text-gray-700 mb-1">Date & Time * (YYYY-MM-DD HH:MM)</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="2025-08-15 18:00"
-        value={eventDate}
-        onChangeText={setEventDate}
-      />
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">Duration (hours) *</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="2"
-        value={durationHours}
-        onChangeText={setDurationHours}
-        keyboardType="decimal-pad"
-      />
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">Location *</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="Venue name and address"
-        value={location}
-        onChangeText={setLocation}
-      />
-
-      <Text className="text-sm font-medium text-gray-700 mb-1">Notes (optional)</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-6 text-base"
-        placeholder="Song requests, special requirements..."
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-        numberOfLines={3}
-        textAlignVertical="top"
-      />
-
-      <View className="bg-surface rounded-2xl p-4 mb-6">
-        <Text className="font-semibold text-gray-900 mb-2">Price Estimate</Text>
-        <View className="flex-row justify-between mb-1">
-          <Text className="text-muted">Musician fee</Text>
-          <Text>{formatCurrency(musicianPayout)}</Text>
+        {/* Event type chips */}
+        <Text className="text-text-muted text-xs font-medium uppercase tracking-widest mb-3">Event Type *</Text>
+        <View className="flex-row flex-wrap gap-2 mb-6">
+          {EVENT_TYPES.map((t) => (
+            <TouchableOpacity
+              key={t}
+              className={`px-3 py-2 rounded-full border ${
+                eventType === t
+                  ? 'border-brand-primary bg-indigo-500/10'
+                  : 'border-border-default bg-bg-surface'
+              }`}
+              onPress={() => setEventType(t)}
+            >
+              <Text className={`text-sm font-medium ${eventType === t ? 'text-brand-primary' : 'text-text-muted'}`}>{t}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        <View className="flex-row justify-between mb-1">
-          <Text className="text-muted">Platform fee (15%)</Text>
-          <Text>{formatCurrency(platformFee)}</Text>
-        </View>
-        <View className="h-px bg-gray-200 my-2" />
-        <View className="flex-row justify-between">
-          <Text className="font-semibold">Total</Text>
-          <Text className="font-bold text-primary">{formatCurrency(quotedAmount)}</Text>
-        </View>
-      </View>
 
-      <TouchableOpacity
-        className="bg-primary rounded-2xl py-4 items-center"
-        onPress={handleBook}
-        disabled={loading}
-      >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold text-lg">Send Booking Request</Text>}
-      </TouchableOpacity>
-    </ScrollView>
+        <Input
+          label="Date & Time * (YYYY-MM-DD HH:MM)"
+          placeholder="2025-08-15 18:00"
+          value={eventDate}
+          onChangeText={setEventDate}
+        />
+        <Input
+          label="Duration (hours) *"
+          placeholder="2"
+          value={durationHours}
+          onChangeText={setDurationHours}
+          keyboardType="decimal-pad"
+        />
+        <Input
+          label="Location *"
+          placeholder="Venue name and address"
+          value={location}
+          onChangeText={setLocation}
+        />
+        <Input
+          label="Notes (optional)"
+          placeholder="Song requests, special requirements..."
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+          style={{ height: 80 }}
+        />
+
+        {/* Price breakdown */}
+        <Card className="mb-6">
+          <Text className="text-text-primary font-semibold mb-3">Price Estimate</Text>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-text-muted">Musician fee</Text>
+            <Text className="text-text-primary">{formatCurrency(musicianPayout)}</Text>
+          </View>
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-text-muted">Platform fee (15%)</Text>
+            <Text className="text-text-primary">{formatCurrency(platformFee)}</Text>
+          </View>
+          <View className="h-px bg-border-default my-2" />
+          <View className="flex-row justify-between">
+            <Text className="text-text-primary font-semibold">Total</Text>
+            <Text className="text-brand-primary font-bold text-lg">{formatCurrency(quotedAmount)}</Text>
+          </View>
+        </Card>
+
+        <Button label="Send Booking Request" onPress={handleBook} loading={loading} size="lg" />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

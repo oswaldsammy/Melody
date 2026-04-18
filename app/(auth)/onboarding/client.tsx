@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 export default function ClientOnboarding() {
   const router = useRouter();
@@ -28,33 +30,39 @@ export default function ClientOnboarding() {
   }
 
   return (
-    <View className="flex-1 bg-white px-6 pt-16">
-      <Text className="text-2xl font-bold mb-2">Complete your profile</Text>
-      <Text className="text-muted mb-8">Help musicians know where to find you</Text>
+    <KeyboardAvoidingView className="flex-1 bg-bg-primary" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View className="flex-1 px-6 pt-20 pb-8 justify-between">
 
-      <Text className="text-sm font-medium text-gray-700 mb-1">Phone (optional)</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-4 text-base"
-        placeholder="+1 (555) 000-0000"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
-      <Text className="text-sm font-medium text-gray-700 mb-1">Location</Text>
-      <TextInput
-        className="border border-gray-200 rounded-xl px-4 py-3 mb-8 text-base"
-        placeholder="City, State"
-        value={location}
-        onChangeText={setLocation}
-      />
+          <View>
+            <View className="w-12 h-12 rounded-xl bg-brand-primary items-center justify-center mb-8">
+              <Text className="text-text-primary text-2xl">🎧</Text>
+            </View>
+            <Text className="text-text-primary text-4xl font-bold mb-1">Almost there</Text>
+            <Text className="text-text-muted text-base mb-10">Help musicians know where to find you</Text>
 
-      <TouchableOpacity
-        className="bg-primary rounded-xl py-4 items-center"
-        onPress={handleSave}
-        disabled={loading}
-      >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-semibold text-base">Get Started</Text>}
-      </TouchableOpacity>
-    </View>
+            <Input
+              label="Phone (optional)"
+              placeholder="+1 (555) 000-0000"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+            <Input
+              label="Location"
+              placeholder="City, State"
+              value={location}
+              onChangeText={setLocation}
+            />
+          </View>
+
+          <View>
+            <Button label="Get Started" onPress={handleSave} loading={loading} size="lg" />
+            <Text className="text-text-muted text-xs text-center mt-4">You can update this later in your profile</Text>
+          </View>
+
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

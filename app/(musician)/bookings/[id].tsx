@@ -4,6 +4,9 @@ import { useBooking, useCompleteBooking, useCancelBooking } from '@/hooks/useBoo
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/stripe';
 import { useQueryClient } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 export default function MusicianBookingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,8 +16,16 @@ export default function MusicianBookingDetail() {
   const completeMutation = useCompleteBooking();
   const cancelMutation = useCancelBooking();
 
-  if (isLoading) return <ActivityIndicator className="flex-1 mt-20" color="#7C3AED" />;
-  if (!booking) return <Text className="flex-1 text-center mt-20 text-muted">Not found</Text>;
+  if (isLoading) return (
+    <View className="flex-1 bg-bg-primary items-center justify-center">
+      <ActivityIndicator color="#6366F1" />
+    </View>
+  );
+  if (!booking) return (
+    <View className="flex-1 bg-bg-primary items-center justify-center">
+      <Text className="text-text-muted">Booking not found</Text>
+    </View>
+  );
 
   async function handleConfirm() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -28,59 +39,57 @@ export default function MusicianBookingDetail() {
     );
     if (res.ok) {
       qc.invalidateQueries({ queryKey: ['bookings'] });
-      Alert.alert('Confirmed!', 'The client will be notified.');
+      Alert.alert('Confirmed!', 'The client has been notified.');
     } else {
       Alert.alert('Error', (await res.json()).error);
     }
   }
 
-  async function handleDecline() {
+  function handleDecline() {
     Alert.alert('Decline Booking', 'This will decline and release the payment hold.', [
-      { text: 'Cancel', style: 'cancel' },
+      { text: 'Keep', style: 'cancel' },
       { text: 'Decline', style: 'destructive', onPress: () => cancelMutation.mutateAsync(id) },
     ]);
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 24, paddingTop: 64 }}>
-      <TouchableOpacity onPress={() => router.back()} className="mb-4">
-        <Text className="text-primary">← Back</Text>
+    <ScrollView className="flex-1 bg-bg-primary" contentContainerStyle={{ padding: 24, paddingTop: 64, paddingBottom: 40 }}>
+      <TouchableOpacity onPress={() => router.back()} className="mb-6">
+        <Text className="text-brand-primary font-medium">← Back</Text>
       </TouchableOpacity>
 
-      <Text className="text-2xl font-bold mb-1">{booking.event_type}</Text>
-      <Text className="text-muted mb-4">Client: {(booking as any).client?.full_name}</Text>
+      <View className="flex-row items-start justify-between mb-1">
+        <Text className="text-text-primary text-2xl font-bold flex-1 mr-3">{booking.event_type}</Text>
+        <Badge label={booking.status} variant={booking.status as any} />
+      </View>
+      <Text className="text-text-muted mb-6">Client: {(booking as any).client?.full_name}</Text>
 
-      <View className="bg-surface rounded-2xl p-4 mb-4 gap-2">
-        <Row label="Date" value={new Date(booking.event_date).toLocaleString()} />
-        <Row label="Duration" value={`${booking.duration_hours}h`} />
+      <Card className="mb-4">
+        <Text className="text-text-primary font-semibold mb-3">Event Details</Text>
+        <Row label="Date" value={new Date(booking.event_date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })} />
+        <Row label="Duration" value={`${booking.duration_hours} hour${booking.duration_hours !== 1 ? 's' : ''}`} />
         <Row label="Location" value={booking.location} />
-        <Row label="Status" value={booking.status.toUpperCase()} />
-        {booking.notes && <Row label="Notes" value={booking.notes} />}
-      </View>
+        {booking.notes ? <Row label="Notes" value={booking.notes} /> : null}
+      </Card>
 
-      <View className="bg-surface rounded-2xl p-4 mb-6">
-        <Text className="font-semibold mb-2">Your Earnings</Text>
+      <Card className="mb-6">
+        <Text className="text-text-primary font-semibold mb-3">Your Earnings</Text>
         <Row label="Your payout" value={formatCurrency(booking.musician_payout)} bold />
-      </View>
+      </Card>
 
       {booking.status === 'pending' && (
         <View className="gap-3">
-          <TouchableOpacity className="bg-primary rounded-2xl py-4 items-center" onPress={handleConfirm}>
-            <Text className="text-white font-bold">Accept Booking</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="border border-red-300 rounded-2xl py-4 items-center" onPress={handleDecline}>
-            <Text className="text-red-500 font-semibold">Decline</Text>
-          </TouchableOpacity>
+          <Button label="Accept Booking" onPress={handleConfirm} />
+          <Button label="Decline" variant="destructive" onPress={handleDecline} loading={cancelMutation.isPending} />
         </View>
       )}
 
       {booking.status === 'confirmed' && (
-        <TouchableOpacity
-          className="bg-primary rounded-2xl py-4 items-center"
+        <Button
+          label="Mark as Completed"
           onPress={() => completeMutation.mutateAsync(id)}
-        >
-          <Text className="text-white font-bold">Mark as Completed</Text>
-        </TouchableOpacity>
+          loading={completeMutation.isPending}
+        />
       )}
     </ScrollView>
   );
@@ -88,9 +97,9 @@ export default function MusicianBookingDetail() {
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
-    <View className="flex-row justify-between">
-      <Text className="text-muted">{label}</Text>
-      <Text className={bold ? 'font-bold text-primary' : 'text-gray-900'}>{value}</Text>
+    <View className="flex-row justify-between py-1">
+      <Text className="text-text-muted">{label}</Text>
+      <Text className={`flex-1 text-right ml-4 ${bold ? 'font-bold text-brand-primary' : 'text-text-primary'}`}>{value}</Text>
     </View>
   );
 }

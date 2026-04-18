@@ -1,46 +1,52 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useClientBookings } from '@/hooks/useBookings';
+import { Badge } from '@/components/ui/Badge';
 import type { Booking } from '@/types/database';
-
-const STATUS_COLOR: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  confirmed: 'bg-green-100 text-green-700',
-  completed: 'bg-blue-100 text-blue-700',
-  cancelled: 'bg-gray-100 text-gray-500',
-  disputed: 'bg-red-100 text-red-700',
-  in_progress: 'bg-purple-100 text-purple-700',
-};
 
 export default function ClientBookings() {
   const router = useRouter();
   const { data: bookings, isLoading } = useClientBookings();
 
-  if (isLoading) return <ActivityIndicator className="flex-1 mt-20" color="#7C3AED" />;
+  if (isLoading) return (
+    <View className="flex-1 bg-bg-primary items-center justify-center">
+      <ActivityIndicator color="#6366F1" />
+    </View>
+  );
 
   return (
-    <View className="flex-1 bg-surface">
-      <View className="bg-white px-4 pt-14 pb-4">
-        <Text className="text-2xl font-bold text-gray-900">My Bookings</Text>
+    <View className="flex-1 bg-bg-primary">
+      <View className="px-4 pt-14 pb-4">
+        <Text className="text-text-primary text-2xl font-bold">My Bookings</Text>
       </View>
       <FlatList
         data={bookings ?? []}
         keyExtractor={(b) => b.id}
         contentContainerStyle={{ padding: 16, gap: 12 }}
-        ListEmptyComponent={<Text className="text-center text-muted mt-8">No bookings yet</Text>}
+        ListEmptyComponent={
+          <View className="items-center mt-16">
+            <Text className="text-4xl mb-4">📅</Text>
+            <Text className="text-text-muted text-base">No bookings yet</Text>
+            <Text className="text-text-muted text-sm mt-1">Find a musician to get started</Text>
+          </View>
+        }
         renderItem={({ item }: { item: Booking }) => (
           <TouchableOpacity
-            className="bg-white rounded-2xl p-4 shadow-sm"
+            className="bg-bg-surface border border-border-default rounded-2xl p-4"
             onPress={() => router.push(`/(client)/bookings/${item.id}`)}
+            activeOpacity={0.7}
           >
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="font-semibold text-gray-900">{(item as any).musician?.profile?.full_name}</Text>
-              <View className={`px-2 py-0.5 rounded-full ${STATUS_COLOR[item.status].split(' ')[0]}`}>
-                <Text className={`text-xs font-medium capitalize ${STATUS_COLOR[item.status].split(' ')[1]}`}>{item.status}</Text>
-              </View>
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="font-semibold text-text-primary text-base flex-1 mr-2">
+                {(item as any).musician?.profile?.full_name ?? 'Musician'}
+              </Text>
+              <Badge label={item.status} variant={item.status as any} />
             </View>
-            <Text className="text-muted text-sm">{item.event_type} · {new Date(item.event_date).toLocaleDateString()}</Text>
-            <Text className="text-muted text-sm">{item.location}</Text>
+            <Text className="text-text-muted text-sm">{item.event_type}</Text>
+            <Text className="text-text-muted text-xs mt-1">
+              {new Date(item.event_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+            </Text>
+            {item.location ? <Text className="text-text-muted text-xs mt-0.5">{item.location}</Text> : null}
           </TouchableOpacity>
         )}
       />

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { uploadMusicianPhoto } from '@/lib/storage';
 import { useAuthStore } from '@/store/authStore';
+import { Button } from '@/components/ui/Button';
 
 export default function MediaManager() {
   const router = useRouter();
@@ -61,44 +62,45 @@ export default function MediaManager() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="px-4 pt-14 pb-4 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Text className="text-primary">← Back</Text>
+    <View className="flex-1 bg-bg-primary">
+      <View className="px-4 pt-14 pb-4 flex-row items-center justify-between">
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text className="text-brand-primary font-medium">← Back</Text>
         </TouchableOpacity>
-        <Text className="text-xl font-bold">Photos & Audio</Text>
+        <Text className="text-text-primary text-lg font-bold">Photos & Audio</Text>
+        <View className="w-12" />
       </View>
 
       <View className="px-4 mb-4">
-        <TouchableOpacity
-          className="bg-primary rounded-xl py-3 items-center"
-          onPress={pickAndUploadPhoto}
-          disabled={uploading}
-        >
-          {uploading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-semibold">+ Add Photo</Text>}
-        </TouchableOpacity>
+        <Button label={uploading ? 'Uploading...' : '+ Add Photo'} onPress={pickAndUploadPhoto} loading={uploading} />
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color="#7C3AED" className="mt-8" />
+        <ActivityIndicator color="#6366F1" className="mt-8" />
       ) : (
         <FlatList
           data={media?.filter((m) => m.media_type === 'photo') ?? []}
           keyExtractor={(m) => m.id}
           numColumns={3}
           contentContainerStyle={{ padding: 8 }}
-          ListEmptyComponent={<Text className="text-center text-muted mt-8">No photos yet</Text>}
+          ListEmptyComponent={
+            <View className="items-center mt-16">
+              <Text className="text-4xl mb-4">🖼️</Text>
+              <Text className="text-text-muted">No photos yet</Text>
+              <Text className="text-text-muted text-sm mt-1">Add photos to attract more clients</Text>
+            </View>
+          }
           renderItem={({ item }) => (
             <View className="flex-1 m-1 aspect-square relative">
               <Image source={{ uri: item.storage_path }} className="w-full h-full rounded-xl" />
               <TouchableOpacity
-                className="absolute top-1 right-1 bg-red-500 w-6 h-6 rounded-full items-center justify-center"
-                onPress={() => Alert.alert('Delete', 'Remove this photo?', [
+                className="absolute top-1 right-1 bg-status-error w-6 h-6 rounded-full items-center justify-center"
+                onPress={() => Alert.alert('Delete Photo', 'Remove this photo?', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(item.id) },
                 ])}
               >
-                <Text className="text-white text-xs font-bold">✕</Text>
+                <Text className="text-text-primary text-xs font-bold">✕</Text>
               </TouchableOpacity>
             </View>
           )}

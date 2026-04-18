@@ -8,7 +8,6 @@ import { useAuthStore } from '@/store/authStore';
 export default function AvailabilityScreen() {
   const profile = useAuthStore((s) => s.profile);
   const qc = useQueryClient();
-  const [selected, setSelected] = useState<string | null>(null);
 
   const { data: blocks, isLoading } = useQuery({
     queryKey: ['availability', profile?.id],
@@ -64,39 +63,45 @@ export default function AvailabilityScreen() {
       isBlocked ? 'Make this date available again?' : 'Mark this date as unavailable?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: isBlocked ? 'Unblock' : 'Block',
-          onPress: () => isBlocked ? removeBlock.mutate(date) : addBlock.mutate(date),
-        },
+        { text: isBlocked ? 'Unblock' : 'Block', onPress: () => isBlocked ? removeBlock.mutate(date) : addBlock.mutate(date) },
       ]
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-bg-primary">
       <View className="px-4 pt-14 pb-4">
-        <Text className="text-2xl font-bold text-gray-900">Availability</Text>
-        <Text className="text-muted">Tap a date to block/unblock it</Text>
+        <Text className="text-text-primary text-2xl font-bold">Availability</Text>
+        <Text className="text-text-muted text-sm mt-1">Tap a date to block or unblock it</Text>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color="#7C3AED" className="mt-8" />
+        <ActivityIndicator color="#6366F1" className="mt-8" />
       ) : (
         <Calendar
           markedDates={markedDates}
           onDayPress={handleDayPress}
-          theme={{ selectedDayBackgroundColor: '#7C3AED', todayTextColor: '#7C3AED' }}
+          theme={{
+            calendarBackground: '#09090B',
+            dayTextColor: '#FAFAFA',
+            textDisabledColor: '#3F3F46',
+            monthTextColor: '#FAFAFA',
+            arrowColor: '#6366F1',
+            selectedDayBackgroundColor: '#6366F1',
+            todayTextColor: '#6366F1',
+            dotColor: '#6366F1',
+          }}
         />
       )}
 
-      <View className="flex-row gap-4 px-6 mt-4">
+      <View className="flex-row gap-4 px-6 mt-6">
         <View className="flex-row items-center gap-2">
-          <View className="w-4 h-4 rounded-full bg-red-400" />
-          <Text className="text-muted text-sm">Blocked</Text>
+          <View className="w-3 h-3 rounded-full bg-status-error" />
+          <Text className="text-text-muted text-sm">Blocked</Text>
         </View>
         <View className="flex-row items-center gap-2">
-          <View className="w-4 h-4 rounded-full bg-gray-200" />
-          <Text className="text-muted text-sm">Available</Text>
+          <View className="w-3 h-3 rounded-full border border-border-default" />
+          <Text className="text-text-muted text-sm">Available</Text>
         </View>
       </View>
     </View>
