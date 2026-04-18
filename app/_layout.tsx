@@ -30,13 +30,14 @@ function AuthGate() {
   }, []);
 
   useEffect(() => {
-    if (!navigationState?.key) return;
+    // Wait for navigator to mount AND for the initial session check to complete
+    if (!navigationState?.key || session === undefined) return;
 
     if (session === null) {
       router.replace('/(auth)/sign-in');
       return;
     }
-    if (session && !profile) return;
+    if (!profile) return; // session exists but profile not loaded yet
 
     const inAuth = segments[0] === '(auth)';
     if (!profile && !inAuth) {
